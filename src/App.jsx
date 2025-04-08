@@ -1,104 +1,114 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import MusicPlayer from "./components/music-player";
+import Letter from "./pages/letters";
+import Interact from "./pages/interact";
+import Confession from "./pages/Confession";
 
-function MusicPlayer() {
-  const audioRef = useRef(null);
-  const [playing, setPlaying] = useState(true);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.volume = 0.3; // 默认音量
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn('自动播放被拦截，可以手动点击播放');
-        });
-      }
-    }
-  }, []);
-
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (audio) {
-      if (playing) {
-        audio.pause();
-      } else {
-        audio.play();
-      }
-      setPlaying(!playing);
-    }
-  };
-
+function FloatingHearts({ count }) {
+  const hearts = Array.from({ length: count });
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <audio ref={audioRef} src="/audio/bgm.mp3" loop />
-      <button
-        onClick={togglePlay}
-        className="bg-pink-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-pink-600"
-      >
-        {playing ? '暂停音乐 🎵' : '播放音乐 🎶'}
-      </button>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {hearts.map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 0, x: "50%" }}
+          animate={{ opacity: 1, y: -200, x: `${Math.random() * 100}%` }}
+          transition={{ duration: 2, delay: i * 0.1 }}
+          className="absolute text-pink-500 text-2xl select-none"
+          style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 80}%` }}
+        >
+          ❤️
+        </motion.div>
+      ))}
     </div>
   );
 }
 
-const gifts = [
-  {
-    name: '刻字项链',
-    reason: '简单又有纪念意义，就像我们的每一天。',
-    image: '/assets/necklace.jpg'
-  },
-  {
-    name: '拍立得',
-    reason: '用来记录我们一起度过的温柔瞬间。',
-    image: '/assets/instax.jpg'
-  },
-  {
-    name: '手写信+香薰蜡烛',
-    reason: '写下我想对你说的话，配上熟悉的味道。',
-    image: '/assets/letter.jpg'
-  }
-];
+function HomeWithEasterEgg() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [showEgg, setShowEgg] = useState(false);
+  const [heartCount, setHeartCount] = useState(0);
 
-export default function App() {
-  const [selectedGift, setSelectedGift] = useState(null);
+  useEffect(() => {
+    if (location.state && location.state.fromInteract) {
+      setShowEgg(true);
+      const timer = setTimeout(() => setShowEgg(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
+
+  const handleHeartClick = () => {
+    setHeartCount(prev => {
+      const newCount = prev + 1;
+      if (newCount === 9) {
+        navigate("/confession");
+      }
+      return newCount;
+    });
+  };
 
   return (
-    <main className="min-h-screen bg-pink-50 flex flex-col items-center p-6">
-      <h1 className="text-3xl font-bold mt-6 mb-4 text-center text-pink-700">
-        我为你准备的一些小小心意
-      </h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-        {gifts.map((gift, index) => (
-          <motion.div
-            key={index}
-            whileHover={{ scale: 1.05 }}
-            className="bg-white rounded-2xl shadow-lg p-4 cursor-pointer"
-            onClick={() => setSelectedGift(gift)}
-          >
-            <img src={gift.image} alt={gift.name} className="w-full h-48 object-cover rounded-xl" />
-            <h2 className="text-xl font-semibold mt-2 text-pink-800">{gift.name}</h2>
-          </motion.div>
-        ))}
+    <div className="text-center relative px-4 w-full max-w-md mx-auto">
+      <motion.h1
+        className="text-3xl sm:text-4xl font-bold text-pink-700 mb-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        给我最特别的你
+      </motion.h1>
+      <motion.p
+        className="text-gray-600 text-base sm:text-lg"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 1 }}
+      >
+        这里有一些话，我一直想对你说。
+      </motion.p>
+      <Link to="/letter">
+        <button className="mt-8 sm:mt-10 px-5 py-2 sm:px-6 sm:py-3 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition shadow-lg">
+          点我进入 💌
+        </button>
+      </Link>
+      <div className="mt-8">
+        <button
+          onClick={handleHeartClick}
+          className="text-3xl sm:text-4xl hover:scale-125 transition-transform duration-200"
+        >
+          ❤️
+        </button>
+        <p className="text-xs sm:text-sm text-gray-500 mt-2">点击 9 次开启表白</p>
       </div>
-
-      {selectedGift && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
-          <div className="bg-white p-6 rounded-xl shadow-xl max-w-md">
-            <h3 className="text-2xl font-bold text-pink-700">{selectedGift.name}</h3>
-            <p className="mt-4 text-gray-600">{selectedGift.reason}</p>
-            <button
-              onClick={() => setSelectedGift(null)}
-              className="mt-6 px-4 py-2 bg-pink-500 text-white rounded-full hover:bg-pink-600"
-            >
-              关闭
-            </button>
-          </div>
-        </div>
+      {heartCount > 0 && <FloatingHearts count={heartCount} />}
+      {showEgg && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 text-pink-600 text-sm"
+        >
+          🎉 彩蛋：谢谢你完成了小互动，你真的很特别 💖
+        </motion.div>
       )}
-      <MusicPlayer />
-    </main>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <main className="min-h-screen bg-pink-50 flex flex-col items-center justify-center p-4 sm:p-6 relative">
+        <Routes>
+          <Route path="/" element={<HomeWithEasterEgg />} />
+          <Route path="/letter" element={<Letter />} />
+          <Route path="/interact" element={<Interact />} />
+          <Route path="/confession" element={<Confession />} />
+        </Routes>
+        <MusicPlayer />
+      </main>
+    </Router>
   );
 }
