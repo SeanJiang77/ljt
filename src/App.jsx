@@ -6,7 +6,6 @@ import Letter from "./pages/letters";
 import Interact from "./pages/interact";
 import Confession from "./pages/Confession";
 
-
 function FloatingHearts({ count }) {
   const hearts = Array.from({ length: count });
   return (
@@ -32,6 +31,7 @@ function HomeWithEasterEgg() {
   const navigate = useNavigate();
   const [showEgg, setShowEgg] = useState(false);
   const [heartCount, setHeartCount] = useState(0);
+  const [remainingHearts, setRemainingHearts] = useState(9);
 
   useEffect(() => {
     if (location.state && location.state.fromInteract) {
@@ -49,6 +49,7 @@ function HomeWithEasterEgg() {
       }
       return newCount;
     });
+    setRemainingHearts(prev => Math.max(prev - 1, 0));
   };
 
   return (
@@ -81,7 +82,9 @@ function HomeWithEasterEgg() {
         >
           ❤️
         </button>
-        <p className="text-xs sm:text-sm text-gray-500 mt-2">点击 9 次开启表白</p>
+        <p className="text-xs sm:text-sm text-gray-500 mt-2">
+          点击 {remainingHearts} 次开启表白
+        </p>
       </div>
       {heartCount > 0 && <FloatingHearts count={heartCount} />}
       {showEgg && (
