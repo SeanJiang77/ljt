@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LJT 菜谱推荐器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 text-zinc-800 min-h-screen flex flex-col">
+  <header class="p-4 flex items-center justify-between max-w-3xl mx-auto w-full">
+    <a href="./index.html" class="text-rose-600 text-sm font-medium hover:text-rose-700 transition">← 返回 Love for LJT ❤️</a>
+    <h1 class="text-xl sm:text-2xl font-bold text-rose-600">午晚餐菜谱推荐器</h1>
+  </header>
+
+  <main class="flex-1 w-full px-4 sm:px-6">
+    <div class="max-w-3xl mx-auto bg-white/70 backdrop-blur-sm rounded-2xl border border-pink-200 p-6 shadow-sm">
+      <p class="text-sm text-zinc-600 mb-6 text-center">自动推荐午餐与晚餐，可分别设置是否吃辣，并随机生成麻辣烫/自选菜搭配。</p>
+
+      <h2 class="font-semibold mb-3 text-rose-700">偏好设置</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block font-medium text-sm mb-1">午餐偏好：</label>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <input id="likeSpicyLunch" type="checkbox" class="h-4 w-4" />
+              <label for="likeSpicyLunch" class="text-sm">午餐吃辣</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="vegModeLunch" type="checkbox" class="h-4 w-4" />
+              <label for="vegModeLunch" class="text-sm">素食模式</label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-sm mb-1">晚餐偏好：</label>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <input id="likeSpicyDinner" type="checkbox" class="h-4 w-4" />
+              <label for="likeSpicyDinner" class="text-sm">晚餐吃辣</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="vegModeDinner" type="checkbox" class="h-4 w-4" />
+              <label for="vegModeDinner" class="text-sm">素食模式</label>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="noRepeat" type="checkbox" class="h-4 w-4" checked />
+          <label for="noRepeat" class="text-sm">午晚餐避免重复</label>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-3 mt-6 mb-6">
+        <button id="btnRecommend" class="px-5 py-2 rounded-xl bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition">生成午+晚餐</button>
+      </div>
+
+      <section id="result" class="grid sm:grid-cols-2 gap-6">
+        <div class="rounded-2xl border border-pink-200 bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm">
+          <div class="bg-pink-100 px-4 py-2 text-sm font-semibold text-rose-700">午餐推荐</div>
+          <div id="lunchCard" class="p-4"></div>
+        </div>
+        <div class="rounded-2xl border border-pink-200 bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm">
+          <div class="bg-pink-100 px-4 py-2 text-sm font-semibold text-rose-700">晚餐推荐</div>
+          <div id="dinnerCard" class="p-4"></div>
+        </div>
+      </section>
+
+      <footer class="text-xs text-zinc-500 mt-8 text-center">价格单位：人民币（元）。</footer>
+    </div>
+  </main>
+
+  <footer class="py-6 text-center text-xs text-zinc-500">Made with ❤️ by Tianqi — 2025</footer>
+
+  <script>
+    const WHOLE_DISHES = [
+      { name: '麻辣钵钵鸡', price: 14, spice: 8, tags:['chicken','spicy'] },
+      { name: '牛肉胡萝卜饺子（10个）', price: 14, spice: 2, tags:['beef'] },
+      { name: '西葫芦鸡蛋饺子（10个）', price: 10, spice: 1, tags:['veg'] },
+      { name: '自选菜', price: 10, spice: 5, tags:['combo'] },
+      { name: '鸡肉滑蛋饭', price: 15, spice: 1, tags:['chicken'] },
+      { name: '牛肉滑蛋饭', price: 15, spice: 1, tags:['beef'] },
+      { name: '麻辣烫', price: 14, spice: 8, tags:['combo','spicy'] },
+      { name: '米村拌饭·儿童牛肉饭', price: 20, spice: 1, tags:['beef'] },
+      { name: '袁记云饺·鲜虾蟹籽（10个）', price: 24, spice: 1, tags:['seafood'] }
+    ];
+
+    const CUSTOM_CHOICES = ['黄瓜炒鸡蛋','辣椒酿肉','土豆丝','西兰花','宫保鸡丁','鸡丝'];
+    const MALATANG_ITEMS = ['生菜','西兰花','金针菇','千页豆腐','香菇','菠菜'];
+
+    function randomPick(arr, count) {
+      const pool = [...arr];
+      const result = [];
+      for (let i = 0; i < count && pool.length > 0; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        result.push(pool.splice(idx, 1)[0]);
+      }
+      return result;
+    }
+
+    function getComboDetails(dishName, likeSpicy) {
+      if (dishName.includes('麻辣烫')) {
+        const picks = randomPick(MALATANG_ITEMS, 4);
+        if (likeSpicy) picks.push('辣椒油');
+        return `配菜：${picks.join('、')}`;
+      } else if (dishName.includes('自选菜')) {
+        const picks = randomPick(CUSTOM_CHOICES, 3);
+        return `选菜：${picks.join('、')}`;
+      }
+      return '';
+    }
+
+    function pickDish(likeSpicy, vegMode) {
+      let dishes = WHOLE_DISHES.filter(d => !vegMode || (!d.tags.includes('chicken') && !d.tags.includes('beef') && !d.tags.includes('seafood')));
+      dishes = dishes.sort(() => 0.5 - Math.random());
+      if (likeSpicy) {
+        const spicyDishes = dishes.filter(d => d.spice >= 5);
+        if (spicyDishes.length) return spicyDishes[0];
+      } else {
+        const mildDishes = dishes.filter(d => d.spice < 5);
+        if (mildDishes.length) return mildDishes[0];
+      }
+      return dishes[0];
+    }
+
+    function renderCard(el, dish, likeSpicy) {
+      const comboDetails = getComboDetails(dish.name, likeSpicy);
+      el.innerHTML = `<div class='text-lg font-semibold mb-1'>${dish.name}</div><div class='text-sm text-zinc-600 mb-1'>¥${dish.price}</div>${comboDetails ? `<div class='text-sm text-rose-700'>${comboDetails}</div>` : ''}`;
+    }
+
+    const lunchCard = document.getElementById('lunchCard');
+    const dinnerCard = document.getElementById('dinnerCard');
+    const btnRecommend = document.getElementById('btnRecommend');
+
+    function doRecommend() {
+      const likeSpicyLunch = document.getElementById('likeSpicyLunch').checked;
+      const vegModeLunch = document.getElementById('vegModeLunch').checked;
+      const likeSpicyDinner = document.getElementById('likeSpicyDinner').checked;
+      const vegModeDinner = document.getElementById('vegModeDinner').checked;
+      const noRepeat = document.getElementById('noRepeat').checked;
+
+      let lunch = pickDish(likeSpicyLunch, vegModeLunch);
+      let dinner = pickDish(likeSpicyDinner, vegModeDinner);
+      if (noRepeat && lunch.name === dinner.name) dinner = pickDish(likeSpicyDinner, vegModeDinner);
+
+      renderCard(lunchCard, lunch, likeSpicyLunch);
+      renderCard(dinnerCard, dinner, likeSpicyDinner);
+    }
+
+    btnRecommend.addEventListener('click', doRecommend);
+    doRecommend();
+  </script>
+</body>
+</html>
